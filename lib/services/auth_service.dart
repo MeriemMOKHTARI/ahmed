@@ -3,15 +3,13 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import '../config/config.dart';
 
 class AuthService {
     String? ipAddress ;
-
- 
-
     Future <String> sendSMS(String phoneNumber,String platform,String ipAdresseUser,String entry_id, Account account, Databases databases) async {
     Client client = Client()
         .setEndpoint(Config.appwriteEndpoint)
@@ -52,6 +50,7 @@ class AuthService {
     }
   }
 
+     // ignore: non_constant_identifier_names
      Future<String> VerifyOTP(String phoneNumber, String otp, Account account, Databases databases) async {
     Client client = Client()
         .setEndpoint(Config.appwriteEndpoint)
@@ -74,22 +73,20 @@ class AuthService {
         final responseBody = json.decode(result.responseBody);
         print('Decoded response body: $responseBody');
         
-        if (responseBody['status'] == 'OK') { // Changed from 200 to 'OK' to match potential string response
-          print('OTP verification successful');
+        if (responseBody['status'] == '200') { // Changed from 200 to 'OK' to match potential string response
           return '200';
-        } else if (responseBody['status'] == 'ERR') {
-          print('OTP verification failed: ${responseBody['error']}');
-          return '401';
-        } else {
-          print('Unexpected status in response: ${responseBody['status']}');
-          return '500';
+        } else if (responseBody['status'] == '600') {
+          return '600';
+        } else if (responseBody['status'] == '333') {
+          return '333';
+        }
+        else {
+                    return '500';
         }
       } else {
-        print('Function execution failed: ${result.status}');
         return '500';
       }
     } catch (e) {
-      print('Error verifying OTP: $e');
       return '500';
     }
   }
@@ -109,7 +106,52 @@ class AuthService {
     });
   }
 
-  
+  Future <String> saveUserInfos(String phoneNumber,String platform,String ipAdresseUser,String entry_id,String name,String familyname,String email, Account account, Databases databases) async {
+    Client client = Client()
+        .setEndpoint(Config.appwriteEndpoint)
+        .setProject(Config.appwriteProjectId)
+        .setSelfSigned(status: true);
+    Functions functions = Functions(client);
+    try {
+      Execution result = await functions.createExecution(
+        functionId: "saveUserInfo",
+        body: json.encode({
+          "phoneNumber": phoneNumber,
+"user_id" : entry_id ,
+"name" : name,
+"familyName" : familyname , 
+"platform_user" : platform ,
+"ipadress_user" : "255.255.255.255" ,         
+ "email": email  
+        }),method: ExecutionMethod.pOST,
+      );
+      if (result.status == 'completed') {
+        final responseBody = json.decode(result.responseBody);
+        print(responseBody);
+        if (responseBody['status'] == 400) {
+            print('please provide all informations');
+          return '400';
+            // Handle successful 
+        
+        } else if (responseBody['status'] == 200){ 
+                    print('infos saved successfully');
+
+          return '200';
+          // Handle SMS send failure
+        }else {
+          return 'ERR';
+        }
+      } else {
+        print('Function execution failed: ${result.status}' );
+      return '401';
+      }
+    } catch (e) {
+      // Handle error
+       print('Error saving user infos: $e');
+            return '401';
+    }
+  }
+
 
   
 }
